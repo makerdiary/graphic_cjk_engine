@@ -48,6 +48,13 @@ typedef struct
 	VMINT underline;
 } graphic_cjk_engine_font_t;
 
+typedef struct
+{
+	VMINT width;
+	VMINT height;
+	VMUINT8 *glyph_bitmap;
+
+} graphic_cjk_engine_bitmap_t;
 
 VMINT graphic_cjk_engine_set_font(graphic_cjk_engine_font_t ext_font);
 
@@ -57,9 +64,11 @@ void graphic_cjk_engine_set_font_size(VMINT font_size);
 
 void graphic_cjk_engine_set_font_style(VMINT bold, VMINT italic, VMINT underline);
 
-VM_RESULT graphic_cjk_engine_measure_character(VMWCHAR gbcode_euc, VMINT* width, VMINT* height);
+VM_RESULT graphic_cjk_engine_measure_character(VMUWCHAR gbcode_euc, VMINT* width, VMINT* height);
 
-VMINT graphic_cjk_engine_get_bitmap(VMUWCHAR gbcode_euc, VMUINT8 *glyph_bitmap);
+VMINT graphic_cjk_engine_get_bitmap(VMUWCHAR gbcode_euc, graphic_cjk_engine_bitmap_t *p_bitmap);
+
+VMINT graphic_cjk_engine_show_bitmap(VMINT x, VMINT y, graphic_cjk_engine_bitmap_t bitmap);
 
 VMINT graphic_cjk_engine_blt_frame(void);
 

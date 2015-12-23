@@ -88,39 +88,74 @@ void graphic_cjk_engine_set_font_style(VMINT bold, VMINT italic, VMINT underline
 	vm_graphic_set_font_style(bold, italic, underline);
 }
 
-VM_RESULT graphic_cjk_engine_measure_character(VMWCHAR gbcode_euc, VMINT* width, VMINT* height)
+VM_RESULT graphic_cjk_engine_measure_character(VMUWCHAR gbcode_euc, VMINT* width, VMINT* height)
 {
-	VMWCHAR character = char_gb2312_to_unicode(gbcode_euc);
+	VMUWCHAR character = char_gb2312_to_unicode(gbcode_euc);
 	vm_graphic_measure_character(character, width, height);
 
 	return VM_SUCCESS;
 }
 
-VMINT graphic_cjk_engine_get_bitmap(VMUWCHAR gbcode_euc, VMUINT8 *glyph_bitmap)
+VMINT graphic_cjk_engine_get_bitmap(VMUWCHAR gbcode_euc, graphic_cjk_engine_bitmap_t *p_bitmap)
 {
-	int i, j;
-	VMWCHAR des_code[] = {0,0};
-	VMINT row, col;
+	int i, j, index;
+	VMUWCHAR des_code[] = {0,0};
+	VMINT width, height;
 	des_code[0] = char_gb2312_to_unicode(gbcode_euc);
 
 	vm_graphic_draw_text(&g_frame, 0, 0, des_code);
 
-	vm_graphic_measure_character(des_code[0], &row, &col);
+	vm_graphic_measure_character(des_code[0], &width, &height);
+
+	p_bitmap->width = width;
+	p_bitmap->height = height;
 
 	VMUINT16 *p_buf = (VMUINT16 *)(g_frame_group[0]->buffer);
 
-	for(i=0; i<row; i++) {
-		for(j=0; j<col; j++) {
-			if(p_buf[i*SCREEN_WIDTH+j]) {
-				glyph_bitmap[(i+7)>>3][j] |= (1<<(i-((i>>3)<<3)));
+	for(i=0; i<height; i++) {
+		index = (i>>3)*width;
+		for(j=0; j<width; j++) {
+			if(p_buf[i*SCREEN_WIDTH+j]>0x8410) {
+				vm_log_info("data=0x%4x,",p_buf[i*SCREEN_WIDTH+j]);
+				*(p_bitmap->glyph_bitmap + index + j) |= (1<<(i%8));
 			}
 			else {
-				glyph_bitmap[(i+7)>>3][j] &= ~(1<<(i-((i>>3)<<3)));
+				*(p_bitmap->glyph_bitmap + index + j)  &= ~(1<<(i%8));
 			}
 		}
 	}
 
 }
+
+
+VMINT graphic_cjk_engine_show_bitmap(VMINT x, VMINT y, graphic_cjk_engine_bitmap_t bitmap)
+{
+	VMINT width = bitmap.width;
+	VMINT height = bitmap.height;
+	VMINT i,j,k;
+    VMUINT8 ctmp;
+    VMINT row_byte = (height + 7)>>3;
+
+
+    for (i=0; i<row_byte; i++)
+    {
+    	for (j=0; j<width; j++) {
+    		ctmp = *(bitmap.glyph_bitmap + i*width + j);
+    		for (k=0; k<8; k++) {
+    			if(ctmp & 0x01) {
+    				vm_graphic_draw_point(&g_frame, x+j, y+i*8+k);
+    			}
+    			ctmp = ctmp >> 1;
+
+    		}
+    	}
+    }
+    return VM_SUCCESS;
+}
+
+
+
+
 
 VMINT graphic_cjk_engine_blt_frame(void)
 {

@@ -25,6 +25,7 @@
 #include "vmwdt.h"
 #include "vmgraphic.h"
 #include "vmsystem.h"
+#include <string.h>
 
 #include "ResID.h"
 #include "vmchset.h"
@@ -48,14 +49,16 @@
 /* Set font and draw hello world text */
 static void draw_hello(void) {
 
-    VMCHAR *teststr = "人人生而自由，在尊严和权利上一律平等。";
+    VMUCHAR *teststr = "通字库";
     VMINT font_width, font_height;
     VMUINT8 *glyph_bitmap;
+    graphic_cjk_engine_bitmap_t bitmap;
+    VMUINT glyph_size;
 
     graphic_cjk_engine_font_t ext_font = {
     		SIMHEI_FONT_PATH,
 			SIMHEI_FONT_SIZE,
-			28,
+			48,
 			VM_FALSE,
 			VM_FALSE,
 			VM_FALSE
@@ -64,7 +67,24 @@ static void draw_hello(void) {
     graphic_cjk_engine_set_font(ext_font);
 
     graphic_cjk_engine_measure_character(teststr[0]*256 + teststr[1], &font_width, &font_height);
-    glyph_bitmap = vm_malloc((font_height+7)/8 * font_width);
+    vm_log_info("font_width=%d, font_height=%d\n", font_width, font_height);
+    glyph_size = (font_height+7)/8 * font_width;
+    glyph_bitmap = vm_malloc(glyph_size);
+	if(glyph_bitmap == NULL){
+		return ;
+	}
+    memset(glyph_bitmap,0,glyph_size);
+
+    bitmap.glyph_bitmap = glyph_bitmap;
+
+	graphic_cjk_engine_get_bitmap(teststr[0]*256 + teststr[1], &bitmap);
+
+	graphic_cjk_engine_show_bitmap(100,100,bitmap);
+
+
+	graphic_cjk_engine_blt_frame();
+
+	graphic_cjk_engine_deinit();
 
 }
 
