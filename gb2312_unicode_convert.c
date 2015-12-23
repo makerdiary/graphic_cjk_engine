@@ -40,9 +40,10 @@
 #
 #
 */
+
 #include "gb2312_unicode_convert.h"
 
-const unsigned short GB2312_to_UNICODE_TABLE[][2] = {
+const VMUWCHAR GB2312_to_UNICODE_TABLE[][2] = {
 		0x2121, 0x3000, // # IDEOGRAPHIC SPACE
 		0x2122, 0x3001, // # IDEOGRAPHIC COMMA
 		0x2123, 0x3002, // # IDEOGRAPHIC FULL STOP
@@ -7491,13 +7492,13 @@ const unsigned short GB2312_to_UNICODE_TABLE[][2] = {
 };
 
 
-unsigned short char_gb2312_to_unicode(unsigned short gbcode_euc)
+VMUWCHAR char_gb2312_to_unicode(VMUWCHAR gbcode_euc)
 {
-	int n = sizeof(GB2312_to_UNICODE_TABLE)/sizeof(unsigned short)/2;
+	VMINT n = sizeof(GB2312_to_UNICODE_TABLE)/sizeof(VMUWCHAR)/2;
 
-	int low = 0, mid, high = n -1;
+	VMINT low = 0, mid, high = n -1;
 
-	unsigned short gbcode = gbcode_euc - 0x8080;
+	VMUWCHAR gbcode = gbcode_euc - 0x8080;
 
 	while(low <= high) {
 		mid = (low + high)/2;
@@ -7511,10 +7512,10 @@ unsigned short char_gb2312_to_unicode(unsigned short gbcode_euc)
 	return 0;
 }
 
-int str_gb2312_to_unicode(const unsigned char *source, unsigned short *destination, int destination_size)
+VMINT str_gb2312_to_unicode(const VMUCHAR *source, VMUWCHAR *destination, VMINT destination_size)
 {
-	int i,j;
-	unsigned short unicode;
+	VMINT i,j;
+	VMUWCHAR unicode;
 	for(i=0,j=0;i<destination_size;i++,j+=2) {
 		destination[i] = char_gb2312_to_unicode((source[j]<<8)+source[j+1]);
 	}

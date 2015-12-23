@@ -44,9 +44,11 @@
 #ifndef _GB2312_UNICODE_CONVERT_H_
 #define _GB2312_UNICODE_CONVERT_H_
 
-unsigned short char_gb2312_to_unicode(unsigned short gbcode_euc);
+#include "vmtype.h"
 
-int str_gb2312_to_unicode(const unsigned char *source, unsigned short *destination, int destination_size);
+VMUWCHAR char_gb2312_to_unicode(VMUWCHAR gbcode_euc);
+
+VMINT str_gb2312_to_unicode(const VMUCHAR *source, VMUWCHAR *destination, VMINT destination_size);
 
 
 
