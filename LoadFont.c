@@ -71,7 +71,7 @@ void file_write(const char* fileName, const char* strBuf, long pos)
 	vm_chset_ascii_to_ucs2(w_file_name, VM_FS_MAX_PATH_LENGTH, file_name);
 
 	// write file
-	if((filehandle = vm_fs_open(w_file_name, VM_FS_MODE_WRITE, TRUE)) < 0)
+	if((filehandle = vm_fs_open(w_file_name, VM_FS_MODE_CREATE_ALWAYS_WRITE, TRUE)) < 0)
 	{
 		vm_log_info("Write failed to open file: %s",file_name);
 		return;
@@ -102,7 +102,7 @@ static void draw_hello(void) {
     graphic_cjk_engine_font_t ext_font = {
     		DEMO_FONT_PATH,
 			DEMO_FONT_SIZE,
-			15,
+			47,
 			VM_FALSE,
 			VM_FALSE,
 			VM_FALSE
@@ -115,10 +115,11 @@ static void draw_hello(void) {
 
     VMCHAR demostr[100];
     sprintf(demostr, "font_width=%d, font_height=%d\n", font_width, font_height);
-    g_file_write("angel_font.txt", demostr, 0);
+    file_write("angel_font.txt", demostr, 0);
 
     vm_log_info("font_width=%d, font_height=%d\n", font_width, font_height);
-    glyph_size = (font_height+7)/8 * font_width;
+
+    glyph_size = font_height * font_width;
     glyph_bitmap = vm_malloc(glyph_size);
 	if(glyph_bitmap == NULL){
 		return ;
@@ -127,7 +128,8 @@ static void draw_hello(void) {
 
     bitmap.glyph_bitmap = glyph_bitmap;
 
-    graphic_cjk_engine_set_font_style(1,0,0);
+
+    graphic_cjk_engine_set_font_style(0,0,0);
 
 	graphic_cjk_engine_get_bitmap(teststr[0]*256 + teststr[1], &bitmap);
 
