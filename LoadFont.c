@@ -26,7 +26,7 @@
 #include "vmgraphic.h"
 #include "vmsystem.h"
 #include <string.h>
-
+#include "vmfs.h"
 #include "ResID.h"
 #include "vmchset.h"
 #include "vmgraphic_font.h"
@@ -46,19 +46,63 @@
 #endif
 
 
+void file_write(const char* fileName, const char* strBuf, long pos)
+{
+	VMINT drv ;
+	VMCHAR file_name[VM_FS_MAX_PATH_LENGTH];
+	VMWCHAR w_file_name[VM_FS_MAX_PATH_LENGTH];
+	VM_FS_HANDLE filehandle = -1;
+	VMUINT writelen = 0;
+	VMINT ret = 0;
+
+	/* If there is a removable letter (SD Card) use it,
+	 * otherwise stored it in the flash storage
+	 * (vm_fs_get_internal_drive_letter).
+	 * */
+	drv = vm_fs_get_removable_drive_letter();
+	if(drv <0){
+		drv = vm_fs_get_internal_drive_letter();
+	    if(drv <0){
+	    	vm_log_fatal("not find driver");
+	    	return ;
+	    }
+	  }
+	sprintf(file_name, "%c:\\%s", drv, fileName);
+	vm_chset_ascii_to_ucs2(w_file_name, VM_FS_MAX_PATH_LENGTH, file_name);
+
+	// write file
+	if((filehandle = vm_fs_open(w_file_name, VM_FS_MODE_WRITE, TRUE)) < 0)
+	{
+		vm_log_info("Write failed to open file: %s",file_name);
+		return;
+	}
+	vm_log_info("Write success to open file: %s", file_name);
+
+	vm_fs_seek(filehandle, pos, VM_FS_BASE_END);
+
+	ret = vm_fs_write(filehandle, (void*)strBuf, strlen(strBuf), &writelen);
+	if(ret < 0)
+	{
+		vm_log_info("Failed to write file");
+		return;
+	}
+	vm_log_info("Success to write file: %s", file_name);
+	vm_fs_close(filehandle);
+}
+
 /* Set font and draw hello world text */
 static void draw_hello(void) {
 
-    VMUCHAR *teststr = "Í¨×Ö¿â";
+    VMUCHAR *teststr = "Ç°";
     VMINT font_width, font_height;
     VMUINT8 *glyph_bitmap;
     graphic_cjk_engine_bitmap_t bitmap;
     VMUINT glyph_size;
 
     graphic_cjk_engine_font_t ext_font = {
-    		SIMHEI_FONT_PATH,
-			SIMHEI_FONT_SIZE,
-			48,
+    		DEMO_FONT_PATH,
+			DEMO_FONT_SIZE,
+			15,
 			VM_FALSE,
 			VM_FALSE,
 			VM_FALSE
@@ -67,6 +111,12 @@ static void draw_hello(void) {
     graphic_cjk_engine_set_font(ext_font);
 
     graphic_cjk_engine_measure_character(teststr[0]*256 + teststr[1], &font_width, &font_height);
+
+
+    VMCHAR demostr[100];
+    sprintf(demostr, "font_width=%d, font_height=%d\n", font_width, font_height);
+    g_file_write("angel_font.txt", demostr, 0);
+
     vm_log_info("font_width=%d, font_height=%d\n", font_width, font_height);
     glyph_size = (font_height+7)/8 * font_width;
     glyph_bitmap = vm_malloc(glyph_size);
@@ -77,10 +127,11 @@ static void draw_hello(void) {
 
     bitmap.glyph_bitmap = glyph_bitmap;
 
+    graphic_cjk_engine_set_font_style(1,0,0);
+
 	graphic_cjk_engine_get_bitmap(teststr[0]*256 + teststr[1], &bitmap);
 
 	graphic_cjk_engine_show_bitmap(100,100,bitmap);
-
 
 	graphic_cjk_engine_blt_frame();
 

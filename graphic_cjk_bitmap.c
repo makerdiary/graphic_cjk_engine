@@ -67,6 +67,7 @@ VMINT graphic_cjk_engine_set_font(graphic_cjk_engine_font_t ext_font)
     color.g = 255;
     color.b = 255;
     vm_graphic_set_color(color);
+    vm_graphic_set_font_size(ext_font.font_size);
 
     return VM_SUCCESS;
 }
@@ -96,9 +97,40 @@ VM_RESULT graphic_cjk_engine_measure_character(VMUWCHAR gbcode_euc, VMINT* width
 	return VM_SUCCESS;
 }
 
+VMUINT16 graphic_cjk_engine_get_avg_gray(VMINT width, VMINT height, VMUINT16 *p_buf)
+{
+	VMINT i,j,tmp_r,tmp_g,tmp_b,index;
+	VMUINT32 sum_r = 0, sum_g = 0, sum_b = 0, avg_r, avg_g, avg_b;
+	VMINT count = 0;
+	for(i=0;i<height;i++) {
+		index = i*SCREEN_WIDTH;
+		for(j=0;j<width;j++) {
+			tmp_r = (p_buf[index+j]>>8)&0xf8;
+			tmp_g = (p_buf[index+j]>>3)&0xfc;
+			tmp_b = (p_buf[index+j]<<3)&0xf8;
+
+			if((tmp_r<0xff && tmp_r>0) || (tmp_g<0xff && tmp_g>0) || (tmp_b<0xff && tmp_b>0)){
+				count++;
+				sum_r += tmp_r;
+				sum_g += tmp_g;
+				sum_b += tmp_b;
+			}
+
+
+		}
+	}
+	avg_r = sum_r / count;
+	avg_g = sum_g / count;
+	avg_b = sum_b / count;
+
+	return ((avg_r<<8)|(avg_b<<3)|(avg_b>>3));
+
+
+}
+
 VMINT graphic_cjk_engine_get_bitmap(VMUWCHAR gbcode_euc, graphic_cjk_engine_bitmap_t *p_bitmap)
 {
-	int i, j, index;
+	VMINT i, j, index, buf_index;
 	VMUWCHAR des_code[] = {0,0};
 	VMINT width, height;
 	des_code[0] = char_gb2312_to_unicode(gbcode_euc);
@@ -112,10 +144,14 @@ VMINT graphic_cjk_engine_get_bitmap(VMUWCHAR gbcode_euc, graphic_cjk_engine_bitm
 
 	VMUINT16 *p_buf = (VMUINT16 *)(g_frame_group[0]->buffer);
 
+	VMUINT16 avg_gray = graphic_cjk_engine_get_avg_gray(width, height, p_buf);
+
 	for(i=0; i<height; i++) {
 		index = (i>>3)*width;
+		buf_index = i*SCREEN_WIDTH;
+
 		for(j=0; j<width; j++) {
-			if(p_buf[i*SCREEN_WIDTH+j]>0x8410) {
+			if(p_buf[buf_index+j]>avg_gray) {
 				vm_log_info("data=0x%4x,",p_buf[i*SCREEN_WIDTH+j]);
 				*(p_bitmap->glyph_bitmap + index + j) |= (1<<(i%8));
 			}
