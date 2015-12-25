@@ -56,6 +56,10 @@ typedef struct
 
 } graphic_cjk_engine_bitmap_t;
 
+void graphic_cjk_engine_init();
+
+void graphic_cjk_engine_free_font_pool();
+
 VMINT graphic_cjk_engine_set_font(graphic_cjk_engine_font_t ext_font);
 
 void graphic_cjk_engine_deinit();

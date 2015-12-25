@@ -93,16 +93,16 @@ void file_write(const char* fileName, const char* strBuf, long pos)
 /* Set font and draw hello world text */
 static void draw_hello(void) {
 
-    VMUCHAR *teststr = "前";
+    VMUCHAR teststr[][12] = {"床前明月光", "疑似地上霜", "举头望明月", "低头思故乡"};
     VMINT font_width, font_height;
     VMUINT8 *glyph_bitmap;
     graphic_cjk_engine_bitmap_t bitmap;
     VMUINT glyph_size;
 
     graphic_cjk_engine_font_t ext_font = {
-    		DEMO_FONT_PATH,
-			DEMO_FONT_SIZE,
-			47,
+    		SIMHEI_FONT_PATH,
+			SIMHEI_FONT_SIZE,
+			36,
 			VM_FALSE,
 			VM_FALSE,
 			VM_FALSE
@@ -110,7 +110,7 @@ static void draw_hello(void) {
 
     graphic_cjk_engine_set_font(ext_font);
 
-    graphic_cjk_engine_measure_character(teststr[0]*256 + teststr[1], &font_width, &font_height);
+    graphic_cjk_engine_measure_character(teststr[0][0]*256 + teststr[0][1], &font_width, &font_height);
 
 
     VMCHAR demostr[100];
@@ -124,20 +124,21 @@ static void draw_hello(void) {
 	if(glyph_bitmap == NULL){
 		return ;
 	}
-    memset(glyph_bitmap,0,glyph_size);
 
     bitmap.glyph_bitmap = glyph_bitmap;
 
-
     graphic_cjk_engine_set_font_style(0,0,0);
 
-	graphic_cjk_engine_get_bitmap(teststr[0]*256 + teststr[1], &bitmap);
-
-	graphic_cjk_engine_show_bitmap(100,100,bitmap);
+    VMINT i,j,k;
+	for(i=0;i<4;i++) {
+		for(j=0,k=0;j<10;j+=2,k++) {
+			memset(glyph_bitmap,0,glyph_size);
+			graphic_cjk_engine_get_bitmap(teststr[i][j]*256 + teststr[i][j+1], &bitmap);
+			graphic_cjk_engine_show_bitmap(k*bitmap.width,(i+1)*48-bitmap.height,bitmap);
+		}
+	}
 
 	graphic_cjk_engine_blt_frame();
-
-	graphic_cjk_engine_deinit();
 
 }
 
@@ -146,11 +147,13 @@ void handle_sysevt(VMINT message, VMINT param) {
 	switch (message) {
 	case VM_EVENT_CREATE:
         vm_res_init(86);    /* Initiate resource as Simple Chinese */
+        graphic_cjk_engine_init();
 		break;
 	case VM_EVENT_PAINT:
 		draw_hello();
 		break;
 	case VM_EVENT_QUIT:
+		graphic_cjk_engine_deinit();
 		vm_res_release();
 
 		break;
