@@ -45,7 +45,7 @@
 #error " Board not support"
 #endif
 
-
+#if 0   //not used
 void file_write(const char* fileName, const char* strBuf, long pos)
 {
 	VMINT drv ;
@@ -71,7 +71,7 @@ void file_write(const char* fileName, const char* strBuf, long pos)
 	vm_chset_ascii_to_ucs2(w_file_name, VM_FS_MAX_PATH_LENGTH, file_name);
 
 	// write file
-	if((filehandle = vm_fs_open(w_file_name, VM_FS_MODE_CREATE_ALWAYS_WRITE, TRUE)) < 0)
+	if((filehandle = vm_fs_open(w_file_name, VM_FS_MODE_APPEND, TRUE)) < 0)
 	{
 		vm_log_info("Write failed to open file: %s",file_name);
 		return;
@@ -89,20 +89,91 @@ void file_write(const char* fileName, const char* strBuf, long pos)
 	vm_log_info("Success to write file: %s", file_name);
 	vm_fs_close(filehandle);
 }
+#endif  //not used
+
+VMINT file_create(const char* file_name)
+{
+	VMWCHAR w_file_name[VM_FS_MAX_PATH_LENGTH];
+	VM_FS_HANDLE filehandle = -1;
+
+	vm_chset_ascii_to_ucs2(w_file_name, VM_FS_MAX_PATH_LENGTH, file_name);
+
+	if((filehandle = vm_fs_open(w_file_name, VM_FS_MODE_CREATE_ALWAYS_WRITE, TRUE)) < 0) {
+		vm_log_info("Can't create file: %s, now exit.",file_name);
+		return VM_FAIL;
+	}
+	vm_fs_close(filehandle);
+
+	return VM_SUCCESS;
+}
+
+
+VMINT bitmap_to_file(const char *file_name, const char *char_name, VMINT index, graphic_cjk_engine_bitmap_t bitmap)
+{
+	VMWCHAR w_file_name[VM_FS_MAX_PATH_LENGTH];
+	VM_FS_HANDLE filehandle = -1;
+	VMUINT writelen = 0;
+	VMINT ret = 0;
+	VMCHAR line_str[260];
+	VMINT i,j;
+	VMINT pos = 0;
+	VMUINT8 avg_gray;
+
+	vm_chset_ascii_to_ucs2(w_file_name, VM_FS_MAX_PATH_LENGTH, file_name);
+
+	if((filehandle = vm_fs_open(w_file_name, VM_FS_MODE_APPEND, TRUE)) < 0) {
+		vm_log_info("Can't open file: %s, now exit.",file_name);
+		return VM_FAIL;
+	}
+
+	sprintf(line_str,"//%s, height = %d, width = %d \r\nunsigned char font_glyph_%d[%d][%d] = {\r\n", char_name, bitmap.height, bitmap.width, index, bitmap.height, bitmap.width);
+	if((ret = vm_fs_write(filehandle, (void*)line_str, strlen(line_str), &writelen)) < 0) {
+		vm_log_info("Fail to write file: %s, now exit.",file_name);
+		return VM_FAIL;
+	}
+
+	avg_gray = graphic_cjk_engine_get_avg_gray(bitmap);
+
+	for(i=0;i<bitmap.height;i++) {
+
+		pos = sprintf(line_str,"        ");
+		for(j=0;j<bitmap.width;j++) {
+			pos += sprintf(line_str+pos, "%d, ", bitmap.glyph_bitmap[i*bitmap.width+j] > avg_gray? 1 : 0);
+		}
+		sprintf(line_str+pos,"\r\n");
+
+		if((ret = vm_fs_write(filehandle, (void*)line_str, strlen(line_str), &writelen)) < 0) {
+			vm_log_info("Fail to write file: %s, now exit.",file_name);
+			return VM_FAIL;
+		}
+	}
+
+	sprintf(line_str,"};\r\n\r\n");
+	if((ret = vm_fs_write(filehandle, (void*)line_str, strlen(line_str), &writelen)) < 0) {
+		vm_log_info("Fail to write file: %s, now exit.",file_name);
+		return VM_FAIL;
+	}
+
+	vm_fs_close(filehandle);
+
+	return VM_SUCCESS;
+}
+
 
 /* Set font and draw hello world text */
 static void draw_hello(void) {
 
     VMUCHAR teststr[][12] = {"床前明月光", "疑似地上霜", "举头望明月", "低头思故乡"};
+    //VMUCHAR char_name[][8] = {"chuang", "qian", "ming", "yue", "guang", "yi", "shi", "di", "shang", "shuang", "ju", "tou", "wang", "ming", "yue", "di", "tou", "si", "gu", "xiang"};
     VMINT font_width, font_height;
     VMUINT8 *glyph_bitmap;
     graphic_cjk_engine_bitmap_t bitmap;
     VMUINT glyph_size;
 
     graphic_cjk_engine_font_t ext_font = {
-    		SIMHEI_FONT_PATH,
-			SIMHEI_FONT_SIZE,
-			36,
+    		DEMO_FONT_PATH,
+			DEMO_FONT_SIZE,
+			47,
 			VM_FALSE,
 			VM_FALSE,
 			VM_FALSE
@@ -110,16 +181,7 @@ static void draw_hello(void) {
 
     graphic_cjk_engine_set_font(ext_font);
 
-    graphic_cjk_engine_measure_character(teststr[0][0]*256 + teststr[0][1], &font_width, &font_height);
-
-
-    VMCHAR demostr[100];
-    sprintf(demostr, "font_width=%d, font_height=%d\n", font_width, font_height);
-    file_write("angel_font.txt", demostr, 0);
-
-    vm_log_info("font_width=%d, font_height=%d\n", font_width, font_height);
-
-    glyph_size = font_height * font_width;
+    glyph_size = 64 * 64;
     glyph_bitmap = vm_malloc(glyph_size);
 	if(glyph_bitmap == NULL){
 		return ;
@@ -129,14 +191,41 @@ static void draw_hello(void) {
 
     graphic_cjk_engine_set_font_style(0,0,0);
 
+    file_create("E:\\angel_font_32.c");
+
     VMINT i,j,k;
+    VMUCHAR char_name[3]={0,0,0};
 	for(i=0;i<4;i++) {
 		for(j=0,k=0;j<10;j+=2,k++) {
 			memset(glyph_bitmap,0,glyph_size);
 			graphic_cjk_engine_get_bitmap(teststr[i][j]*256 + teststr[i][j+1], &bitmap);
-			graphic_cjk_engine_show_bitmap(k*bitmap.width,(i+1)*48-bitmap.height,bitmap);
+			graphic_cjk_engine_show_bitmap(k*bitmap.width,(i+1)*48-bitmap.height/2,bitmap);
+
+			char_name[0] = teststr[i][j];
+			char_name[1] = teststr[i][j+1];
+
+			bitmap_to_file("E:\\angel_font_32.c",char_name,i*5+k,bitmap);
 		}
 	}
+
+	graphic_cjk_engine_clear_bitmap();
+
+	graphic_cjk_engine_set_font_size(35);
+	file_create("E:\\angel_font_24.c");
+
+	for(i=0;i<4;i++) {
+		for(j=0,k=0;j<10;j+=2,k++) {
+			memset(glyph_bitmap,0,glyph_size);
+			graphic_cjk_engine_get_bitmap(teststr[i][j]*256 + teststr[i][j+1], &bitmap);
+			graphic_cjk_engine_show_bitmap(k*bitmap.width,(i+1)*48-bitmap.height/2,bitmap);
+
+			char_name[0] = teststr[i][j];
+			char_name[1] = teststr[i][j+1];
+
+			bitmap_to_file("E:\\angel_font_24.c",char_name,i*5+k,bitmap);
+		}
+	}
+
 
 	graphic_cjk_engine_blt_frame();
 

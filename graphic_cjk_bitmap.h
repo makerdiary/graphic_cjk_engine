@@ -72,7 +72,11 @@ VM_RESULT graphic_cjk_engine_measure_character(VMUWCHAR gbcode_euc, VMINT* width
 
 VMINT graphic_cjk_engine_get_bitmap(VMUWCHAR gbcode_euc, graphic_cjk_engine_bitmap_t *p_bitmap);
 
+VMUINT8 graphic_cjk_engine_get_avg_gray(graphic_cjk_engine_bitmap_t bitmap);
+
 VMINT graphic_cjk_engine_show_bitmap(VMINT x, VMINT y, graphic_cjk_engine_bitmap_t bitmap);
+
+VMINT graphic_cjk_engine_clear_bitmap();
 
 VMINT graphic_cjk_engine_blt_frame(void);
 

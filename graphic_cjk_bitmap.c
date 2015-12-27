@@ -240,6 +240,16 @@ VMINT graphic_cjk_engine_show_bitmap(VMINT x, VMINT y, graphic_cjk_engine_bitmap
     return VM_SUCCESS;
 }
 
+VMINT graphic_cjk_engine_clear_bitmap()
+{
+	vm_graphic_color_argb_t color;
+    color.r = 0;
+    color.g = 0;
+    color.b = 0;
+    vm_graphic_set_color(color);
+    vm_graphic_draw_solid_rectangle(g_frame_group[1], 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+}
+
 
 VMINT graphic_cjk_engine_blt_frame(void)
 {
